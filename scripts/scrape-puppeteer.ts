@@ -139,58 +139,47 @@ async function scrapeLaCuracao(): Promise<RawProduct[]> {
 
       let prevCount = 0;
       for (let scroll = 0; scroll < 10; scroll++) {
-        await page.evaluate(() => window.scrollBy(0, 1000));
+        await page.evaluate(`window.scrollBy(0, 1000)`);
         await new Promise((r) => setTimeout(r, 1500));
-        const count = await page.evaluate(() =>
-          document.querySelectorAll(".product-item, .product-collection, [class*='ProductCard']").length
-        );
+        const count = await page.evaluate(
+          `document.querySelectorAll(".product-item, .product-collection, [class*='ProductCard']").length`
+        ) as number;
         if (count === prevCount) break;
         prevCount = count;
       }
 
-      const products = await page.evaluate(() => {
-        const items: { name: string; price: number; originalPrice: number | null; url: string; imageUrl: string | null }[] = [];
-
-        const cards = document.querySelectorAll(
-          ".product-item, .product-collection, [class*='product-card']"
-        );
-
-        cards.forEach((card) => {
-          const nameEl = card.querySelector(
-            ".product-collection__title a, h2 a, h3 a, [class*='product-name'] a"
+      const products = await page.evaluate(`
+        (() => {
+          const items = [];
+          const cards = document.querySelectorAll(
+            ".product-item, .product-collection, [class*='product-card']"
           );
-          const name = nameEl?.textContent?.trim() || "";
-          if (!name || name.length < 3) return;
-
-          const href = (nameEl as HTMLAnchorElement)?.href || "";
-
-          const currentEl = card.querySelector(".current span, .money span, .price span.current");
-          const compareEl = card.querySelector(".compare span, .price--sale .compare");
-
-          const currentText = currentEl?.textContent || "";
-          const compareText = compareEl?.textContent || "";
-
-          const parseP = (t: string) => {
-            const m = t.match(/[\d,.]+/);
-            return m ? parseFloat(m[0].replace(",", "")) : 0;
-          };
-
-          const price = parseP(currentText);
-          if (price === 0) return;
-          const originalPrice = parseP(compareText);
-
-          const img = card.querySelector("img") as HTMLImageElement;
-          items.push({
-            name,
-            price,
-            originalPrice: originalPrice > price ? originalPrice : null,
-            url: href,
-            imageUrl: img?.src || null,
+          cards.forEach(card => {
+            const nameEl = card.querySelector(
+              ".product-collection__title a, h2 a, h3 a, [class*='product-name'] a"
+            );
+            const name = nameEl ? nameEl.textContent.trim() : "";
+            if (!name || name.length < 3) return;
+            const href = nameEl.href || "";
+            const currentEl = card.querySelector(".current span, .money span, .price span.current");
+            const compareEl = card.querySelector(".compare span, .price--sale .compare");
+            const currentText = currentEl ? currentEl.textContent : "";
+            const compareText = compareEl ? compareEl.textContent : "";
+            const toNum = t => { const m = t.match(/[\\d,.]+/); return m ? parseFloat(m[0].replace(",", "")) : 0; };
+            const price = toNum(currentText);
+            if (price === 0) return;
+            const originalPrice = toNum(compareText);
+            const img = card.querySelector("img");
+            items.push({
+              name, price,
+              originalPrice: originalPrice > price ? originalPrice : null,
+              url: href,
+              imageUrl: img ? img.src : null,
+            });
           });
-        });
-
-        return items;
-      });
+          return items;
+        })()
+      `) as { name: string; price: number; originalPrice: number | null; url: string; imageUrl: string | null }[];
 
       for (const p of products) {
         all.push({ ...p, sku: null, isAvailable: true });
@@ -278,7 +267,7 @@ async function storeProducts(products: RawProduct[], storeSlug: string) {
 }
 
 async function main() {
-  const target = process.argv[2] || "all";
+  const target = process.argv[2] || process.env.SCRAPE_TARGET || "all";
 
   if (target === "aeon" || target === "all") {
     console.log("\n=== AEON COMPUTERS ===");
