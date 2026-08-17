@@ -1,4 +1,4 @@
-import { VertexAI } from "@google-cloud/vertexai";
+import { GoogleGenAI } from "@google/genai";
 import type { RawProduct } from "./base";
 
 export interface MatchedProduct {
@@ -96,13 +96,16 @@ export async function matchProducts(
   const location = process.env.GCP_LOCATION || "us-central1";
 
   let useAI = true;
-  let model: ReturnType<VertexAI["getGenerativeModel"]> | null = null;
+  let genai: GoogleGenAI | null = null;
 
   try {
-    const vertexAI = new VertexAI({ project: projectId, location });
-    model = vertexAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+    genai = new GoogleGenAI({
+      vertexai: true,
+      project: projectId,
+      location,
+    });
   } catch {
-    console.log("[Matcher] Vertex AI unavailable, using rule-based matching");
+    console.log("[Matcher] Google GenAI unavailable, using rule-based matching");
     useAI = false;
   }
 
@@ -112,9 +115,9 @@ export async function matchProducts(
   for (let i = 0; i < products.length; i += batchSize) {
     const batch = products.slice(i, i + batchSize);
 
-    if (useAI && model) {
+    if (useAI && genai) {
       try {
-        const aiResults = await matchBatchWithAI(model, batch, storeName);
+        const aiResults = await matchBatchWithAI(genai, batch, storeName);
         results.push(...aiResults);
         continue;
       } catch (err) {
@@ -131,7 +134,7 @@ export async function matchProducts(
 }
 
 async function matchBatchWithAI(
-  model: ReturnType<VertexAI["getGenerativeModel"]>,
+  genai: GoogleGenAI,
   products: RawProduct[],
   storeName: string
 ): Promise<MatchedProduct[]> {
@@ -162,8 +165,12 @@ Rules:
 - specs: Key specifications as key-value pairs (storage, ram, screen_size, color, etc.)
 - Return valid JSON only, no markdown`;
 
-  const result = await model.generateContent(prompt);
-  const text = result.response?.candidates?.[0]?.content?.parts?.[0]?.text || "";
+  const response = await genai.models.generateContent({
+    model: "gemini-2.5-flash-lite",
+    contents: prompt,
+  });
+
+  const text = response.text ?? "";
 
   const jsonMatch = text.match(/\[[\s\S]*\]/);
   if (!jsonMatch) throw new Error("No JSON array in response");
