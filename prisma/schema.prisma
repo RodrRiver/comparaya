@@ -1,0 +1,132 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Category {
+  id        Int        @id @default(autoincrement())
+  name      String
+  slug      String     @unique
+  icon      String?
+  parentId  Int?
+  parent    Category?  @relation("CategoryTree", fields: [parentId], references: [id])
+  children  Category[] @relation("CategoryTree")
+  products  Product[]
+  createdAt DateTime   @default(now())
+
+  @@map("categories")
+}
+
+model Product {
+  id              Int            @id @default(autoincrement())
+  name            String
+  brand           String
+  model           String
+  categoryId      Int
+  category        Category       @relation(fields: [categoryId], references: [id])
+  imageUrl        String?
+  specs           Json?
+  slug            String         @unique
+  lowestPriceEver Decimal?       @db.Decimal(10, 2)
+  viewCount       Int            @default(0)
+  storeProducts   StoreProduct[]
+  priceAlerts     PriceAlert[]
+  wishlists       Wishlist[]
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  @@index([brand])
+  @@index([categoryId])
+  @@map("products")
+}
+
+model Store {
+  id            Int            @id @default(autoincrement())
+  name          String
+  slug          String         @unique
+  websiteUrl    String
+  logoUrl       String?
+  isActive      Boolean        @default(true)
+  storeProducts StoreProduct[]
+  createdAt     DateTime       @default(now())
+
+  @@map("stores")
+}
+
+model StoreProduct {
+  id               Int            @id @default(autoincrement())
+  productId        Int
+  product          Product        @relation(fields: [productId], references: [id])
+  storeId          Int
+  store            Store          @relation(fields: [storeId], references: [id])
+  storeUrl         String
+  storeProductName String
+  storeSku         String?
+  currentPrice     Decimal        @db.Decimal(10, 2)
+  originalPrice    Decimal?       @db.Decimal(10, 2)
+  isAvailable      Boolean        @default(true)
+  lastScrapedAt    DateTime       @default(now())
+  priceHistory     PriceHistory[]
+
+  @@unique([productId, storeId])
+  @@index([storeId])
+  @@index([currentPrice])
+  @@map("store_products")
+}
+
+model PriceHistory {
+  id             Int          @id @default(autoincrement())
+  storeProductId Int
+  storeProduct   StoreProduct @relation(fields: [storeProductId], references: [id])
+  price          Decimal      @db.Decimal(10, 2)
+  scrapedAt      DateTime     @default(now())
+
+  @@index([storeProductId, scrapedAt])
+  @@map("price_history")
+}
+
+model User {
+  id           Int          @id @default(autoincrement())
+  email        String       @unique
+  name         String?
+  passwordHash String?
+  imageUrl     String?
+  priceAlerts  PriceAlert[]
+  wishlists    Wishlist[]
+  createdAt    DateTime     @default(now())
+
+  @@map("users")
+}
+
+model PriceAlert {
+  id             Int      @id @default(autoincrement())
+  userId         Int
+  user           User     @relation(fields: [userId], references: [id])
+  productId      Int
+  product        Product  @relation(fields: [productId], references: [id])
+  targetPrice    Decimal? @db.Decimal(10, 2)
+  notifyMethod   String   @default("email")
+  isActive       Boolean  @default(true)
+  lastNotifiedAt DateTime?
+  createdAt      DateTime @default(now())
+
+  @@unique([userId, productId])
+  @@index([isActive])
+  @@map("price_alerts")
+}
+
+model Wishlist {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+  productId Int
+  product   Product  @relation(fields: [productId], references: [id])
+  createdAt DateTime @default(now())
+
+  @@unique([userId, productId])
+  @@map("wishlists")
+}

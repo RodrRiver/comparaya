@@ -1,0 +1,51 @@
+import { notFound } from "next/navigation";
+import { mockProducts, categories } from "@/lib/mock-data";
+import { ProductCard } from "@/components/ProductCard";
+import type { Metadata } from "next";
+
+export async function generateMetadata(
+  props: PageProps<"/categoria/[slug]">
+): Promise<Metadata> {
+  const { slug } = await props.params;
+  const category = categories.find((c) => c.slug === slug);
+  if (!category) return { title: "Categoría no encontrada" };
+
+  return {
+    title: `${category.name} — Compara precios`,
+    description: `Compara precios de ${category.name.toLowerCase()} en tiendas de El Salvador.`,
+  };
+}
+
+export default async function CategoryPage(
+  props: PageProps<"/categoria/[slug]">
+) {
+  const { slug } = await props.params;
+  const category = categories.find((c) => c.slug === slug);
+
+  if (!category) notFound();
+
+  const products = mockProducts.filter((p) => p.category === slug);
+
+  return (
+    <div className="mx-auto max-w-7xl px-4 py-8">
+      <h1 className="text-3xl font-bold mb-2">{category.name}</h1>
+      <p className="text-muted-foreground mb-8">
+        {products.length} producto{products.length !== 1 ? "s" : ""} encontrado
+        {products.length !== 1 ? "s" : ""}
+      </p>
+
+      {products.length > 0 ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {products.map((product) => (
+            <ProductCard key={product.id} product={product} />
+          ))}
+        </div>
+      ) : (
+        <div className="text-center py-20 text-muted-foreground">
+          <p className="text-lg">No hay productos en esta categoría aún.</p>
+          <p className="text-sm mt-1">Estamos agregando productos nuevos cada día.</p>
+        </div>
+      )}
+    </div>
+  );
+}
