@@ -1,14 +1,34 @@
 import { SearchBar } from "@/components/SearchBar";
 import { CategoryGrid } from "@/components/CategoryGrid";
 import { ProductCard } from "@/components/ProductCard";
-import { mockProducts, categories } from "@/lib/mock-data";
+import { mockProducts, categories as mockCategories } from "@/lib/mock-data";
+import { getCategories, getDeals, getPopularProducts } from "@/lib/queries";
 import { TrendingDown, Bell, Store } from "lucide-react";
 
-export default function HomePage() {
-  const deals = mockProducts
-    .filter((p) => p.discount)
-    .sort((a, b) => (b.discount ?? 0) - (a.discount ?? 0));
-  const popular = mockProducts.slice(0, 4);
+export const dynamic = "force-dynamic";
+
+export default async function HomePage() {
+  let categories;
+  let deals;
+  let popular;
+
+  try {
+    const [dbCategories, dbDeals, dbPopular] = await Promise.all([
+      getCategories(),
+      getDeals(8),
+      getPopularProducts(4),
+    ]);
+
+    categories = dbCategories.length > 0 ? dbCategories : mockCategories;
+    deals = dbDeals.length > 0
+      ? dbDeals
+      : mockProducts.filter((p) => p.discount).sort((a, b) => (b.discount ?? 0) - (a.discount ?? 0));
+    popular = dbPopular.length > 0 ? dbPopular : mockProducts.slice(0, 4);
+  } catch {
+    categories = mockCategories;
+    deals = mockProducts.filter((p) => p.discount).sort((a, b) => (b.discount ?? 0) - (a.discount ?? 0));
+    popular = mockProducts.slice(0, 4);
+  }
 
   return (
     <div>
@@ -32,19 +52,21 @@ export default function HomePage() {
         <CategoryGrid categories={categories} />
       </section>
 
-      <section className="mx-auto max-w-7xl px-4 py-12">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="h-8 w-8 rounded-lg bg-red-500/10 flex items-center justify-center">
-            <TrendingDown className="h-5 w-5 text-red-500" />
+      {deals.length > 0 && (
+        <section className="mx-auto max-w-7xl px-4 py-12">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="h-8 w-8 rounded-lg bg-red-500/10 flex items-center justify-center">
+              <TrendingDown className="h-5 w-5 text-red-500" />
+            </div>
+            <h2 className="text-2xl font-bold">Mejores ofertas</h2>
           </div>
-          <h2 className="text-2xl font-bold">Mejores ofertas</h2>
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {deals.map((product) => (
-            <ProductCard key={product.id} product={product} />
-          ))}
-        </div>
-      </section>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {deals.map((product) => (
+              <ProductCard key={product.id} product={product} />
+            ))}
+          </div>
+        </section>
+      )}
 
       <section className="mx-auto max-w-7xl px-4 py-12">
         <div className="flex items-center gap-3 mb-6">

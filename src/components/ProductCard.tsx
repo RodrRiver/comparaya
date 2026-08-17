@@ -1,10 +1,20 @@
 import Link from "next/link";
-import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import type { MockProduct } from "@/lib/mock-data";
 
-export function ProductCard({ product }: { product: MockProduct }) {
+interface ProductCardProps {
+  id: number;
+  name: string;
+  brand: string;
+  slug: string;
+  imageUrl: string;
+  lowestPrice: number;
+  highestPrice: number;
+  storeCount: number;
+  discount: number | null;
+}
+
+export function ProductCard({ product }: { product: ProductCardProps }) {
   const savings = product.highestPrice - product.lowestPrice;
 
   return (

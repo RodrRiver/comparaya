@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { mockProducts } from "@/lib/mock-data";
+import { getProductBySlug } from "@/lib/queries";
 import { PriceTable } from "@/components/PriceTable";
 import { PriceChart } from "@/components/PriceChart";
 import { Badge } from "@/components/ui/badge";
@@ -9,11 +10,23 @@ import { Bell, Heart, TrendingDown, ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import type { Metadata } from "next";
 
+export const dynamic = "force-dynamic";
+
+async function getProduct(slug: string) {
+  try {
+    const dbProduct = await getProductBySlug(slug);
+    if (dbProduct && dbProduct.stores.length > 0) return dbProduct;
+  } catch {}
+
+  const mock = mockProducts.find((p) => p.slug === slug);
+  return mock || null;
+}
+
 export async function generateMetadata(
   props: PageProps<"/producto/[slug]">
 ): Promise<Metadata> {
   const { slug } = await props.params;
-  const product = mockProducts.find((p) => p.slug === slug);
+  const product = await getProduct(slug);
   if (!product) return { title: "Producto no encontrado" };
 
   return {
@@ -26,7 +39,7 @@ export default async function ProductPage(
   props: PageProps<"/producto/[slug]">
 ) {
   const { slug } = await props.params;
-  const product = mockProducts.find((p) => p.slug === slug);
+  const product = await getProduct(slug);
 
   if (!product) notFound();
 
@@ -105,17 +118,19 @@ export default async function ProductPage(
         </div>
       </div>
 
-      <Card className="mt-10">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <TrendingDown className="h-5 w-5 text-primary" />
-            Historial de precios
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <PriceChart data={product.priceHistory} />
-        </CardContent>
-      </Card>
+      {"priceHistory" in product && product.priceHistory.length > 0 && (
+        <Card className="mt-10">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <TrendingDown className="h-5 w-5 text-primary" />
+              Historial de precios
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <PriceChart data={product.priceHistory} />
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
