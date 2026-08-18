@@ -3,10 +3,11 @@ import { mockProducts } from "@/lib/mock-data";
 import { getProductBySlug } from "@/lib/queries";
 import { PriceTable } from "@/components/PriceTable";
 import { PriceChart } from "@/components/PriceChart";
+import { AlertForm } from "@/components/AlertForm";
+import { WishlistButton } from "@/components/WishlistButton";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Bell, Heart, TrendingDown, ArrowLeft } from "lucide-react";
+import { TrendingDown, ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import type { Metadata } from "next";
 
@@ -101,14 +102,12 @@ export default async function ProductPage(
           </p>
 
           <div className="flex gap-3 mb-8">
-            <Button className="gap-2">
-              <Bell className="h-4 w-4" />
-              Crear alerta de precio
-            </Button>
-            <Button variant="outline" className="gap-2">
-              <Heart className="h-4 w-4" />
-              Wishlist
-            </Button>
+            <AlertForm
+              productId={product.id}
+              productName={product.name}
+              currentPrice={product.lowestPrice}
+            />
+            <WishlistButton productId={product.id} />
           </div>
 
           <PriceTable

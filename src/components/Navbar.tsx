@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { Search, Menu, X, TrendingDown } from "lucide-react";
+import { Search, Menu, X, TrendingDown, Heart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -61,6 +61,13 @@ export function Navbar() {
             </Link>
           ))}
         </nav>
+
+        <Link
+          href="/wishlist"
+          className="hidden md:flex items-center gap-1 px-2 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+        >
+          <Heart className="h-4 w-4" />
+        </Link>
 
         <Sheet>
           <SheetTrigger
