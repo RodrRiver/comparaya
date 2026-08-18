@@ -310,6 +310,63 @@ async function scrapeOfficeDepot(): Promise<RawProduct[]> {
   return all;
 }
 
+// ==================== ZONA DIGITAL (API) ====================
+async function scrapeZonaDigital(): Promise<RawProduct[]> {
+  const API = "https://apizd.zonadigitalsv.com/api/ecommerce";
+  const SITE = "https://www.zonadigitalsv.com";
+  const searchTerms = [
+    "monitor", "laptop", "teclado", "mouse", "headset", "procesador",
+    "tarjeta", "ssd", "tv", "tablet", "consola", "switch", "playstation",
+    "router", "cable", "cargador", "usb", "ram", "motherboard", "case",
+    "fuente", "celular", "camara", "impresora", "parlante", "audifonos",
+    "disco", "nvme", "gpu", "refrigeracion", "ventilador", "silla",
+  ];
+
+  const all = new Map<string, RawProduct>();
+
+  for (const term of searchTerms) {
+    let page = 1;
+    while (true) {
+      try {
+        const res = await fetch(`${API}/search_products/`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Accept: "application/json", "User-Agent": "Mozilla/5.0" },
+          body: JSON.stringify({ search: term, page }),
+        });
+        if (!res.ok) break;
+        const data = await res.json();
+        const products = data.products || [];
+        if (products.length === 0) break;
+
+        for (const p of products) {
+          const slug = p.slug || "";
+          if (all.has(slug)) continue;
+          const brand = p.marca?.name || null;
+          const price = p.precio_general || 0;
+          if (price === 0) continue;
+
+          all.set(slug, {
+            name: (brand ? `${brand} ` : "") + (p.title || ""),
+            price,
+            originalPrice: null,
+            url: `${SITE}/product/${slug}`,
+            imageUrl: p.image || null,
+            sku: p.uniqd || null,
+            isAvailable: p.state === 1,
+          });
+        }
+
+        const total = data.total_products || 0;
+        if (page * 8 >= total) break;
+        page++;
+      } catch { break; }
+    }
+    console.log(`  [ZonaDigital] "${term}": ${all.size} unique total`);
+  }
+
+  return Array.from(all.values());
+}
+
 // ==================== STORE TO DB ====================
 async function storeProducts(products: RawProduct[], storeSlug: string) {
   const store = await prisma.store.findUnique({ where: { slug: storeSlug } });
@@ -405,6 +462,7 @@ async function main() {
     radioshack: { fn: scrapeRadioshack, slug: "radioshack" },
     intelmax: { fn: scrapeIntelmax, slug: "intelmax" },
     officedepot: { fn: scrapeOfficeDepot, slug: "office-depot" },
+    zonadigital: { fn: scrapeZonaDigital, slug: "zona-digital" },
   };
 
   const toRun = target && target !== "all"
