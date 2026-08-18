@@ -5,6 +5,7 @@ import { PriceTable } from "@/components/PriceTable";
 import { PriceChart } from "@/components/PriceChart";
 import { AlertForm } from "@/components/AlertForm";
 import { WishlistButton } from "@/components/WishlistButton";
+import { ProductJsonLd } from "@/components/ProductJsonLd";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { TrendingDown, ArrowLeft } from "lucide-react";
@@ -48,6 +49,18 @@ export default async function ProductPage(
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8">
+      {"stores" in product && (
+        <ProductJsonLd
+          name={product.name}
+          brand={product.brand}
+          imageUrl={product.imageUrl}
+          slug={product.slug}
+          lowestPrice={product.lowestPrice}
+          highestPrice={product.highestPrice}
+          storeCount={product.storeCount}
+          stores={product.stores}
+        />
+      )}
       <Link
         href="/"
         className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-6"
