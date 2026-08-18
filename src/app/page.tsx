@@ -32,16 +32,16 @@ export default async function HomePage() {
 
   return (
     <div>
-      <section className="bg-gradient-to-b from-primary/5 to-background py-16 px-4">
+      <section className="bg-gradient-to-b from-primary/5 to-background py-10 sm:py-16 px-4">
         <div className="mx-auto max-w-7xl text-center">
-          <h1 className="text-4xl sm:text-5xl font-bold tracking-tight mb-4">
+          <h1 className="text-3xl sm:text-5xl font-bold tracking-tight mb-4">
             Compara precios de electrónica
             <br />
             <span className="text-primary">en El Salvador</span>
           </h1>
-          <p className="text-lg text-muted-foreground mb-8 max-w-2xl mx-auto">
+          <p className="text-base sm:text-lg text-muted-foreground mb-6 sm:mb-8 max-w-2xl mx-auto">
             Encuentra el mejor precio en celulares, laptops, tablets, TVs y más.
-            Comparamos 7 tiendas para que no pagues de más.
+            Comparamos 8 tiendas para que no pagues de más.
           </p>
           <SearchBar />
         </div>
@@ -60,7 +60,7 @@ export default async function HomePage() {
             </div>
             <h2 className="text-2xl font-bold">Mejores ofertas</h2>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
             {deals.map((product) => (
               <ProductCard key={product.id} product={product} />
             ))}
@@ -75,7 +75,7 @@ export default async function HomePage() {
           </div>
           <h2 className="text-2xl font-bold">Productos populares</h2>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           {popular.map((product) => (
             <ProductCard key={product.id} product={product} />
           ))}

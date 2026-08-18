@@ -6,6 +6,7 @@ export interface RawProduct {
   originalPrice: number | null;
   url: string;
   imageUrl: string | null;
+  images?: string[];
   sku: string | null;
   isAvailable: boolean;
 }

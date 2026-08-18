@@ -18,18 +18,25 @@ export function SearchBar() {
   }
 
   return (
-    <form onSubmit={handleSearch} className="w-full max-w-2xl mx-auto">
+    <form onSubmit={handleSearch} className="w-full max-w-2xl mx-auto px-2 sm:px-0">
       <div className="relative">
         <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
         <Input
-          placeholder="Buscar celulares, laptops, tablets..."
+          placeholder="Buscar productos..."
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          className="pl-12 pr-28 h-14 text-base rounded-full border-2 focus-visible:border-primary"
+          className="pl-12 pr-14 sm:pr-28 h-12 sm:h-14 text-sm sm:text-base rounded-full border-2 focus-visible:border-primary"
         />
         <Button
           type="submit"
-          className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full px-6"
+          size="icon"
+          className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full sm:hidden h-8 w-8"
+        >
+          <Search className="h-4 w-4" />
+        </Button>
+        <Button
+          type="submit"
+          className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full px-6 hidden sm:inline-flex"
         >
           Buscar
         </Button>

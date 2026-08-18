@@ -31,7 +31,8 @@ async function scrapeSiman(): Promise<RawProduct[]> {
       for (const p of data) {
         const item = p.items?.[0]; const offer = item?.sellers?.[0]?.commertialOffer;
         if (!offer || offer.Price === 0) continue;
-        all.push({ name: p.productName||"", price: offer.Price, originalPrice: offer.ListPrice>offer.Price?offer.ListPrice:null, url: `${BASE}/${p.linkText}/p`, imageUrl: item?.images?.[0]?.imageUrl||null, sku: item?.itemId||null, isAvailable: offer.IsAvailable??true });
+        const allImages = (item?.images||[]).map((img:any)=>img.imageUrl).filter((u:string)=>!!u);
+        all.push({ name: p.productName||"", price: offer.Price, originalPrice: offer.ListPrice>offer.Price?offer.ListPrice:null, url: `${BASE}/${p.linkText}/p`, imageUrl: allImages[0]||null, images: allImages, sku: item?.itemId||null, isAvailable: offer.IsAvailable??true });
       }
       from += 50; if (data.length < 50) break;
     }
@@ -165,7 +166,7 @@ async function storeProducts(products: RawProduct[], storeSlug: string) {
     const category = await prisma.category.findUnique({ where: { slug: m.extracted.category } });
     const categoryId = category?.id || 1;
     let product = await prisma.product.findUnique({ where: { slug } });
-    if (!product) { try { product = await prisma.product.create({ data: { name: `${m.extracted.brand} ${m.extracted.model}`.trim(), brand: m.extracted.brand, model: m.extracted.model, categoryId, imageUrl: m.rawProduct.imageUrl, specs: m.extracted.specs||{}, slug, lowestPriceEver: m.rawProduct.price } }); created++; } catch { continue; } }
+    if (!product) { try { product = await prisma.product.create({ data: { name: m.rawProduct.name, brand: m.extracted.brand, model: m.extracted.model, categoryId, imageUrl: m.rawProduct.imageUrl, images: m.rawProduct.images||[], specs: m.extracted.specs||{}, slug, lowestPriceEver: m.rawProduct.price } }); created++; } catch { continue; } }
     const existing = await prisma.storeProduct.findUnique({ where: { productId_storeId: { productId: product.id, storeId: store.id } } });
     if (existing) { await prisma.storeProduct.update({ where: { id: existing.id }, data: { currentPrice: m.rawProduct.price, originalPrice: m.rawProduct.originalPrice, isAvailable: m.rawProduct.isAvailable, storeProductName: m.rawProduct.name, storeUrl: m.rawProduct.url, lastScrapedAt: new Date() } }); updated++; }
     else { await prisma.storeProduct.create({ data: { productId: product.id, storeId: store.id, storeUrl: m.rawProduct.url, storeProductName: m.rawProduct.name, storeSku: m.rawProduct.sku, currentPrice: m.rawProduct.price, originalPrice: m.rawProduct.originalPrice, isAvailable: m.rawProduct.isAvailable } }); }

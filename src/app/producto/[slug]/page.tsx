@@ -8,6 +8,7 @@ import { WishlistButton } from "@/components/WishlistButton";
 import { ProductJsonLd } from "@/components/ProductJsonLd";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ImageGallery } from "@/components/ImageGallery";
 import { TrendingDown, ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import type { Metadata } from "next";
@@ -69,15 +70,16 @@ export default async function ProductPage(
         Volver
       </Link>
 
-      <div className="grid lg:grid-cols-[1fr_1.5fr] gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_1.5fr] gap-6 sm:gap-8">
         <div>
-          <div className="rounded-xl border bg-muted/30 p-8 mb-4">
-            <img
-              src={product.imageUrl}
-              alt={product.name}
-              className="w-full max-w-xs mx-auto object-contain"
-            />
-          </div>
+          <ImageGallery
+            images={
+              "images" in product && (product as any).images?.length > 0
+                ? (product as any).images
+                : [product.imageUrl]
+            }
+            alt={product.name}
+          />
         </div>
 
         <div>

@@ -29,6 +29,7 @@ model Product {
   categoryId      Int
   category        Category       @relation(fields: [categoryId], references: [id])
   imageUrl        String?
+  images          String[]       @default([])
   specs           Json?
   slug            String         @unique
   lowestPriceEver Decimal?       @db.Decimal(10, 2)

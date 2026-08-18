@@ -173,6 +173,7 @@ export async function getProductBySlug(slug: string) {
     model: product.model,
     slug: product.slug,
     imageUrl: product.imageUrl || "https://placehold.co/400x400/e2e8f0/475569?text=Producto",
+    images: (product as any).images || [],
     category: product.category.slug,
     lowestPrice,
     highestPrice,

@@ -42,12 +42,16 @@ async function scrapeSiman(): Promise<RawProduct[]> {
         const item = p.items?.[0];
         const offer = item?.sellers?.[0]?.commertialOffer;
         if (!offer || offer.Price === 0) continue;
+        const allImages = (item?.images || [])
+          .map((img: any) => img.imageUrl)
+          .filter((url: string) => !!url);
         all.push({
           name: p.productName || "",
           price: offer.Price,
           originalPrice: offer.ListPrice > offer.Price ? offer.ListPrice : null,
           url: `${BASE}/${p.linkText}/p`,
-          imageUrl: item?.images?.[0]?.imageUrl || null,
+          imageUrl: allImages[0] || null,
+          images: allImages,
           sku: item?.itemId || null,
           isAvailable: offer.IsAvailable ?? true,
         });
@@ -386,11 +390,12 @@ async function storeProducts(products: RawProduct[], storeSlug: string) {
       try {
         product = await prisma.product.create({
           data: {
-            name: `${m.extracted.brand} ${m.extracted.model}`.trim(),
+            name: m.rawProduct.name,
             brand: m.extracted.brand,
             model: m.extracted.model,
             categoryId,
             imageUrl: m.rawProduct.imageUrl,
+            images: m.rawProduct.images || [],
             specs: m.extracted.specs || {},
             slug,
             lowestPriceEver: m.rawProduct.price,
