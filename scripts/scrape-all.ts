@@ -293,6 +293,8 @@ async function scrapeOfficeDepot(): Promise<RawProduct[]> {
         if (price === 0) return;
 
         const img = container.find("img").first();
+        const imgSrc = img.attr("src") || null;
+        const imgUrl = imgSrc && imgSrc.startsWith("/") ? `${BASE}${imgSrc}` : imgSrc;
         const isAvailable = !container.text().includes("Agotado");
 
         all.push({
@@ -300,7 +302,7 @@ async function scrapeOfficeDepot(): Promise<RawProduct[]> {
           price,
           originalPrice: prices.length > 1 ? prices[1] : null,
           url: fullUrl,
-          imageUrl: img.attr("src") || null,
+          imageUrl: imgUrl,
           sku: null,
           isAvailable,
         });
