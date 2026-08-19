@@ -145,9 +145,21 @@ async function scrapeOfficeDepot(): Promise<RawProduct[]> {
     let page = 0;
     while (true) {
       const res = await fetch(`${BASE}${cat}?q=%3Arelevance&page=${page}&pageSize=20`, { headers: HEADERS }); if(!res.ok) break;
-      const $ = cheerio.load(await res.text()); const links=$('a[href*="/p/"]'); if(links.length===0) break;
-      const seen = new Set<string>();
-      links.each((_,el)=>{ const href=$(el).attr("href")||""; const fullUrl=href.startsWith("http")?href:`${BASE}${href}`; if(seen.has(fullUrl)) return; seen.add(fullUrl); const container=$(el).closest(".product-item, .grid").length?$(el).closest(".product-item, .grid"):$(el).parent().parent(); const nameEl=container.find("h2, h3, [class*='name']").first(); const name=nameEl.text().trim()||$(el).attr("title")||""; if(!name) return; const pt=container.text().match(/\$[\d,.]+/g)||[]; const ps=pt.map(t=>parseFloat(t.replace(/[^0-9.]/g,""))).filter(p=>p>0); const price=ps[0]||0; if(price===0) return; const imgSrc=container.find("img").first().attr("src")||null; const imgUrl=imgSrc&&imgSrc.startsWith("/")?`${BASE}${imgSrc}`:imgSrc; all.push({name,price,originalPrice:ps.length>1?ps[1]:null,url:fullUrl,imageUrl:imgUrl,sku:null,isAvailable:!container.text().includes("Agotado")}); });
+      const $ = cheerio.load(await res.text());
+      const cards=$(".product-cnt"); if(cards.length===0) break;
+      const hiddenSkus = new Set<string>();
+      $("style").each((_,s)=>{ for(const m of $(s).text().matchAll(/form#addToCartForm(\w+)\s*\{[^}]*display:\s*none/g)) hiddenSkus.add(m[1]); });
+      cards.each((_,card)=>{ const el=$(card); const linkEl=el.find('a[href*="/p/"]').first(); const href=linkEl.attr("href")||""; if(!href) return; const fullUrl=href.startsWith("http")?href:`${BASE}${href}`;
+        const name=el.find(".contnet-name h2").text().trim()||linkEl.attr("title")||""; if(!name) return;
+        const discountedEl=el.find(".discountedPrice-grid"); const beforeEl=el.find(".beforePrice-grid");
+        let price=0; let originalPrice:number|null=null;
+        if(discountedEl.length){price=parseFloat(discountedEl.text().replace(/[^0-9.]/g,""))||0;if(beforeEl.length)originalPrice=parseFloat(beforeEl.text().replace(/[^0-9.]/g,""))||null}
+        if(price===0){const pt=el.text().match(/\$[\d,.]+/g)||[];const ps=pt.map(t=>parseFloat(t.replace(/[^0-9.]/g,""))).filter(p=>p>0);price=ps[0]||0;originalPrice=ps.length>1?ps[1]:null}
+        if(price===0) return;
+        const agotadoId=el.find(".text-agotado").attr("id")||""; const sku=agotadoId.replace("item-agotado","")||null;
+        const isAvailable=!sku||!hiddenSkus.has(sku);
+        const imgSrc=el.find("img").first().attr("data-src")||el.find("img").first().attr("src")||null; const imgUrl=imgSrc&&imgSrc.startsWith("/")?`${BASE}${imgSrc}`:imgSrc;
+        all.push({name,price,originalPrice:originalPrice&&originalPrice>price?originalPrice:null,url:fullUrl,imageUrl:imgUrl,sku,isAvailable}); });
       page++; if(page>10) break;
     }
   }

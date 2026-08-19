@@ -269,41 +269,58 @@ async function scrapeOfficeDepot(): Promise<RawProduct[]> {
       const html = await res.text();
       const $ = cheerio.load(html);
 
-      const productLinks = $('a[href*="/p/"]');
-      if (productLinks.length === 0) break;
+      const cards = $(".product-cnt");
+      if (cards.length === 0) break;
 
-      const seen = new Set<string>();
-      productLinks.each((_, el) => {
-        const href = $(el).attr("href") || "";
+      const hiddenSkus = new Set<string>();
+      $("style").each((_, s) => {
+        const text = $(s).text();
+        for (const m of text.matchAll(/form#addToCartForm(\w+)\s*\{[^}]*display:\s*none/g)) {
+          hiddenSkus.add(m[1]);
+        }
+      });
+
+      cards.each((_, card) => {
+        const el = $(card);
+        const linkEl = el.find('a[href*="/p/"]').first();
+        const href = linkEl.attr("href") || "";
+        if (!href) return;
         const fullUrl = href.startsWith("http") ? href : `${BASE}${href}`;
-        if (seen.has(fullUrl)) return;
-        seen.add(fullUrl);
 
-        const container = $(el).closest(".product-item, .grid").length
-          ? $(el).closest(".product-item, .grid")
-          : $(el).parent().parent();
-
-        const nameEl = container.find("h2, h3, [class*='name']").first();
-        const name = nameEl.text().trim() || $(el).attr("title") || "";
+        const name = el.find(".contnet-name h2").text().trim() || linkEl.attr("title") || "";
         if (!name) return;
 
-        const priceTexts = container.text().match(/\$[\d,.]+/g) || [];
-        const prices = priceTexts.map((t) => parseFloat(t.replace(/[^0-9.]/g, ""))).filter((p) => p > 0);
-        const price = prices[0] || 0;
+        const discountedEl = el.find(".discountedPrice-grid");
+        const beforeEl = el.find(".beforePrice-grid");
+        let price = 0;
+        let originalPrice: number | null = null;
+
+        if (discountedEl.length) {
+          price = parseFloat(discountedEl.text().replace(/[^0-9.]/g, "")) || 0;
+          if (beforeEl.length) originalPrice = parseFloat(beforeEl.text().replace(/[^0-9.]/g, "")) || null;
+        }
+        if (price === 0) {
+          const priceTexts = el.text().match(/\$[\d,.]+/g) || [];
+          const prices = priceTexts.map((t) => parseFloat(t.replace(/[^0-9.]/g, ""))).filter((p) => p > 0);
+          price = prices[0] || 0;
+          originalPrice = prices.length > 1 ? prices[1] : null;
+        }
         if (price === 0) return;
 
-        const img = container.find("img").first();
-        const imgSrc = img.attr("src") || null;
+        const agotadoId = el.find(".text-agotado").attr("id") || "";
+        const sku = agotadoId.replace("item-agotado", "") || null;
+        const isAvailable = !sku || !hiddenSkus.has(sku);
+
+        const imgSrc = el.find("img").first().attr("data-src") || el.find("img").first().attr("src") || null;
         const imgUrl = imgSrc && imgSrc.startsWith("/") ? `${BASE}${imgSrc}` : imgSrc;
-        const isAvailable = !container.text().includes("Agotado");
 
         all.push({
           name,
           price,
-          originalPrice: prices.length > 1 ? prices[1] : null,
+          originalPrice: originalPrice && originalPrice > price ? originalPrice : null,
           url: fullUrl,
           imageUrl: imgUrl,
-          sku: null,
+          sku,
           isAvailable,
         });
       });
