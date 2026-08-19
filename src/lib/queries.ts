@@ -228,7 +228,10 @@ export async function getProductsByCategory(categorySlug: string) {
 export async function searchProducts(query: string) {
   if (!query.trim()) return [];
 
-  const products = await getPrisma().product.findMany({
+  const prisma = getPrisma();
+
+  // Exact substring match first (fast)
+  const exact = await prisma.product.findMany({
     where: {
       OR: [
         { name: { contains: query, mode: "insensitive" } },
@@ -246,7 +249,38 @@ export async function searchProducts(query: string) {
     take: 50,
   });
 
-  return products.filter((p) => p.storeProducts.length > 0).map(mapProduct);
+  if (exact.filter((p) => p.storeProducts.length > 0).length > 0) {
+    return exact.filter((p) => p.storeProducts.length > 0).map(mapProduct);
+  }
+
+  // Fuzzy search with pg_trgm
+  const fuzzyIds: { id: number }[] = await prisma.$queryRawUnsafe(
+    `SELECT id FROM products
+     WHERE similarity(lower(name), lower($1)) > 0.15
+        OR similarity(lower(brand), lower($1)) > 0.15
+     ORDER BY GREATEST(similarity(lower(name), lower($1)), similarity(lower(brand), lower($1))) DESC
+     LIMIT 50`,
+    query
+  );
+
+  if (fuzzyIds.length === 0) return [];
+
+  const fuzzy = await prisma.product.findMany({
+    where: { id: { in: fuzzyIds.map((r) => r.id) } },
+    include: {
+      category: true,
+      storeProducts: {
+        include: { store: true },
+        orderBy: { currentPrice: "asc" },
+      },
+    },
+  });
+
+  // Preserve the similarity order from the raw query
+  const orderMap = new Map(fuzzyIds.map((r, i) => [r.id, i]));
+  fuzzy.sort((a, b) => (orderMap.get(a.id) ?? 99) - (orderMap.get(b.id) ?? 99));
+
+  return fuzzy.filter((p) => p.storeProducts.length > 0).map(mapProduct);
 }
 
 export async function getStores() {
