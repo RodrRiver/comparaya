@@ -1,0 +1,12 @@
+steps:
+  - name: gcr.io/cloud-builders/docker
+    args:
+      - build
+      - --build-arg=NEXT_PUBLIC_FIREBASE_API_KEY=AIzaSyAJRSErXYMiIlVQ_0DWMi1ECZaufO7TLgs
+      - --build-arg=NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=rodrigoaramos-dev.firebaseapp.com
+      - --build-arg=NEXT_PUBLIC_FIREBASE_PROJECT_ID=rodrigoaramos-dev
+      - -t
+      - gcr.io/rodrigoaramos-dev/comparaya
+      - .
+images:
+  - gcr.io/rodrigoaramos-dev/comparaya
