@@ -7,6 +7,31 @@ function productImage(url: string | null): string {
   return upscaleImageUrl(url || PLACEHOLDER);
 }
 
+function mapProduct(p: any) {
+  const available = p.storeProducts.filter((sp: any) => sp.isAvailable);
+  const priceSources = available.length > 0 ? available : p.storeProducts;
+  const prices = priceSources.map((sp: any) => Number(sp.currentPrice));
+  const lowest = prices.length > 0 ? Math.min(...prices) : 0;
+  const highest = prices.length > 0 ? Math.max(...prices) : 0;
+
+  return {
+    id: p.id,
+    name: p.name,
+    brand: p.brand,
+    model: p.model,
+    slug: p.slug,
+    imageUrl: productImage(p.imageUrl),
+    category: p.category.slug,
+    lowestPrice: lowest,
+    highestPrice: highest,
+    lowestPriceEver: Number(p.lowestPriceEver) || lowest,
+    storeCount: p.storeProducts.length,
+    availableCount: available.length,
+    isAvailable: available.length > 0,
+    discount: null as number | null,
+  };
+}
+
 export async function getCategories() {
   const categories = await getPrisma().category.findMany({
     orderBy: { name: "asc" },
@@ -81,6 +106,8 @@ export async function getDeals(limit = 8) {
       highestPrice: highest,
       lowestPriceEver: Number(p.lowestPriceEver) || lowest,
       storeCount: allStorePrices.length,
+      availableCount: allStorePrices.length,
+      isAvailable: true,
       discount,
     });
 
@@ -92,39 +119,18 @@ export async function getDeals(limit = 8) {
 
 export async function getPopularProducts(limit = 8) {
   const products = await getPrisma().product.findMany({
-    where: { storeProducts: { some: { isAvailable: true } } },
     orderBy: { viewCount: "desc" },
     take: limit,
     include: {
       category: true,
       storeProducts: {
-        where: { isAvailable: true },
         include: { store: true },
         orderBy: { currentPrice: "asc" },
       },
     },
   });
 
-  return products.map((p) => {
-    const prices = p.storeProducts.map((sp) => Number(sp.currentPrice));
-    const lowest = prices.length > 0 ? Math.min(...prices) : 0;
-    const highest = prices.length > 0 ? Math.max(...prices) : 0;
-
-    return {
-      id: p.id,
-      name: p.name,
-      brand: p.brand,
-      model: p.model,
-      slug: p.slug,
-      imageUrl: productImage(p.imageUrl),
-      category: p.category.slug,
-      lowestPrice: lowest,
-      highestPrice: highest,
-      lowestPriceEver: Number(p.lowestPriceEver) || lowest,
-      storeCount: p.storeProducts.length,
-      discount: null as number | null,
-    };
-  });
+  return products.map(mapProduct);
 }
 
 export async function getProductBySlug(slug: string) {
@@ -169,9 +175,10 @@ export async function getProductBySlug(slug: string) {
     }))
   );
 
-  const prices = stores.map((s) => s.price);
-  const lowestPrice = prices.length > 0 ? Math.min(...prices) : 0;
-  const highestPrice = prices.length > 0 ? Math.max(...prices) : 0;
+  const available = stores.filter((s) => s.isAvailable);
+  const priceSources = available.length > 0 ? available : stores;
+  const lowestPrice = priceSources.length > 0 ? Math.min(...priceSources.map((s) => s.price)) : 0;
+  const highestPrice = priceSources.length > 0 ? Math.max(...priceSources.map((s) => s.price)) : 0;
 
   return {
     id: product.id,
@@ -186,6 +193,8 @@ export async function getProductBySlug(slug: string) {
     highestPrice,
     lowestPriceEver: Number(product.lowestPriceEver) || lowestPrice,
     storeCount: stores.length,
+    availableCount: available.length,
+    isAvailable: available.length > 0,
     discount: null as number | null,
     stores,
     priceHistory,
@@ -199,14 +208,10 @@ export async function getProductsByCategory(categorySlug: string) {
   if (!category) return { category: null, products: [] };
 
   const products = await getPrisma().product.findMany({
-    where: {
-      categoryId: category.id,
-      storeProducts: { some: { isAvailable: true } },
-    },
+    where: { categoryId: category.id },
     include: {
       category: true,
       storeProducts: {
-        where: { isAvailable: true },
         include: { store: true },
         orderBy: { currentPrice: "asc" },
       },
@@ -216,26 +221,7 @@ export async function getProductsByCategory(categorySlug: string) {
 
   return {
     category: { name: category.name, slug: category.slug },
-    products: products.map((p) => {
-      const prices = p.storeProducts.map((sp) => Number(sp.currentPrice));
-      const lowest = prices.length > 0 ? Math.min(...prices) : 0;
-      const highest = prices.length > 0 ? Math.max(...prices) : 0;
-
-      return {
-        id: p.id,
-        name: p.name,
-        brand: p.brand,
-        model: p.model,
-        slug: p.slug,
-        imageUrl: productImage(p.imageUrl),
-        category: p.category.slug,
-        lowestPrice: lowest,
-        highestPrice: highest,
-        lowestPriceEver: Number(p.lowestPriceEver) || lowest,
-        storeCount: p.storeProducts.length,
-        discount: null as number | null,
-      };
-    }),
+    products: products.filter((p) => p.storeProducts.length > 0).map(mapProduct),
   };
 }
 
@@ -249,12 +235,10 @@ export async function searchProducts(query: string) {
         { brand: { contains: query, mode: "insensitive" } },
         { model: { contains: query, mode: "insensitive" } },
       ],
-      storeProducts: { some: { isAvailable: true } },
     },
     include: {
       category: true,
       storeProducts: {
-        where: { isAvailable: true },
         include: { store: true },
         orderBy: { currentPrice: "asc" },
       },
@@ -262,26 +246,7 @@ export async function searchProducts(query: string) {
     take: 50,
   });
 
-  return products.map((p) => {
-    const prices = p.storeProducts.map((sp) => Number(sp.currentPrice));
-    const lowest = prices.length > 0 ? Math.min(...prices) : 0;
-    const highest = prices.length > 0 ? Math.max(...prices) : 0;
-
-    return {
-      id: p.id,
-      name: p.name,
-      brand: p.brand,
-      model: p.model,
-      slug: p.slug,
-      imageUrl: productImage(p.imageUrl),
-      category: p.category.slug,
-      lowestPrice: lowest,
-      highestPrice: highest,
-      lowestPriceEver: Number(p.lowestPriceEver) || lowest,
-      storeCount: p.storeProducts.length,
-      discount: null as number | null,
-    };
-  });
+  return products.filter((p) => p.storeProducts.length > 0).map(mapProduct);
 }
 
 export async function getStores() {

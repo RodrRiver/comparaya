@@ -12,21 +12,28 @@ interface ProductCardProps {
   highestPrice: number;
   storeCount: number;
   discount: number | null;
+  isAvailable?: boolean;
 }
 
 export function ProductCard({ product }: { product: ProductCardProps }) {
   const savings = product.highestPrice - product.lowestPrice;
+  const unavailable = product.isAvailable === false;
 
   return (
     <Link href={`/producto/${product.slug}`}>
-      <Card className="group overflow-hidden transition-shadow hover:shadow-lg h-full">
+      <Card className={`group overflow-hidden transition-shadow hover:shadow-lg h-full ${unavailable ? "opacity-60" : ""}`}>
         <div className="relative aspect-square bg-muted/30 p-4">
           <img
             src={product.imageUrl}
             alt={product.name}
-            className="h-full w-full object-contain transition-transform group-hover:scale-105"
+            className={`h-full w-full object-contain transition-transform ${unavailable ? "" : "group-hover:scale-105"}`}
           />
-          {product.discount && (
+          {unavailable && (
+            <Badge className="absolute top-2 left-2 bg-gray-500 hover:bg-gray-500 text-white text-[10px] sm:text-xs">
+              Agotado
+            </Badge>
+          )}
+          {!unavailable && product.discount && (
             <Badge className="absolute top-2 right-2 bg-red-500 hover:bg-red-500 text-white">
               -{product.discount}%
             </Badge>
@@ -38,7 +45,7 @@ export function ProductCard({ product }: { product: ProductCardProps }) {
             {product.name}
           </h3>
           <div className="flex items-baseline gap-1 sm:gap-2 mb-1">
-            <span className="text-sm sm:text-lg font-bold text-primary">
+            <span className={`text-sm sm:text-lg font-bold ${unavailable ? "text-muted-foreground" : "text-primary"}`}>
               ${product.lowestPrice.toFixed(2)}
             </span>
             {product.highestPrice > product.lowestPrice && (
@@ -49,9 +56,9 @@ export function ProductCard({ product }: { product: ProductCardProps }) {
           </div>
           <div className="flex items-center justify-between">
             <span className="text-[10px] sm:text-xs text-muted-foreground">
-              {product.storeCount} tienda{product.storeCount !== 1 ? "s" : ""}
+              {unavailable ? "No disponible" : `${product.storeCount} tienda${product.storeCount !== 1 ? "s" : ""}`}
             </span>
-            {savings > 0 && (
+            {!unavailable && savings > 0 && (
               <span className="text-[10px] sm:text-xs font-medium text-green-600 hidden sm:inline">
                 Ahorra ${savings.toFixed(2)}
               </span>
