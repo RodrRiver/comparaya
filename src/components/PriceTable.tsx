@@ -1,5 +1,5 @@
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
 import { ExternalLink, Check, X } from "lucide-react";
 
 interface StorePrice {
@@ -75,21 +75,15 @@ export function PriceTable({
                 )}
               </td>
               <td className="p-3 text-right">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  render={
-                    <a
-                      href={store.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    />
-                  }
-                  className="gap-1"
+                <a
+                  href={store.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={buttonVariants({ variant: "outline", size: "sm" }) + " gap-1"}
                 >
                   Ir a tienda
                   <ExternalLink className="h-3 w-3" />
-                </Button>
+                </a>
               </td>
             </tr>
           ))}
