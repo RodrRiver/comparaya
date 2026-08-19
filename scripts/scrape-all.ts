@@ -328,6 +328,31 @@ async function scrapeZonaDigital(): Promise<RawProduct[]> {
     "disco", "nvme", "gpu", "refrigeracion", "ventilador", "silla",
   ];
 
+  // Fetch discounted products from offers endpoint
+  const discounts = new Map<string, { price: number; originalPrice: number }>();
+  try {
+    const offersRes = await fetch(`${API}/home_ofertas`, {
+      headers: { Accept: "application/json", "User-Agent": "Mozilla/5.0" },
+    });
+    if (offersRes.ok) {
+      const offersData = await offersRes.json();
+      const offerGroups = offersData.product_hots_d || [];
+      for (const group of offerGroups) {
+        const products = group.products?.data || [];
+        for (const p of products) {
+          const dg = p.discount_g;
+          if (dg?.new_amount && p.slug) {
+            discounts.set(p.slug, {
+              price: Number(dg.new_amount),
+              originalPrice: Number(p.precio_general),
+            });
+          }
+        }
+      }
+      console.log(`  [ZonaDigital] Loaded ${discounts.size} discounted products from offers`);
+    }
+  } catch { /* offers fetch is best-effort */ }
+
   const all = new Map<string, RawProduct>();
 
   for (const term of searchTerms) {
@@ -347,18 +372,21 @@ async function scrapeZonaDigital(): Promise<RawProduct[]> {
         for (const p of products) {
           const slug = p.slug || "";
           if (all.has(slug)) continue;
-          const brand = p.marca?.name || null;
-          const price = p.precio_general || 0;
-          if (price === 0) continue;
+          const basePrice = Number(p.precio_general) || 0;
+          if (basePrice === 0) continue;
+
+          const discount = discounts.get(slug);
+          const price = discount ? discount.price : basePrice;
+          const originalPrice = discount ? discount.originalPrice : null;
 
           all.set(slug, {
-            name: (brand ? `${brand} ` : "") + (p.title || ""),
+            name: p.title || "",
             price,
-            originalPrice: null,
+            originalPrice,
             url: `${SITE}/product/${slug}`,
             imageUrl: p.imagen || p.image || null,
             sku: p.uniqd || null,
-            isAvailable: p.state === 1,
+            isAvailable: true,
           });
         }
 

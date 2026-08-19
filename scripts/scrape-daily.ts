@@ -64,6 +64,22 @@ async function scrapeZonaDigital(): Promise<RawProduct[]> {
   const API = "https://apizd.zonadigitalsv.com/api/ecommerce";
   const SITE = "https://www.zonadigitalsv.com";
   const terms = ["monitor","laptop","teclado","mouse","headset","procesador","tarjeta","ssd","tv","tablet","consola","switch","playstation","router","cable","cargador","usb","ram","motherboard","case","fuente","celular","camara","impresora","parlante","audifonos","disco","nvme","gpu","ventilador","silla"];
+
+  const discounts = new Map<string, { price: number; originalPrice: number }>();
+  try {
+    const offersRes = await fetch(`${API}/home_ofertas`, { headers: { Accept: "application/json", "User-Agent": "Mozilla/5.0" } });
+    if (offersRes.ok) {
+      const offersData = await offersRes.json();
+      for (const group of (offersData.product_hots_d || [])) {
+        for (const p of (group.products?.data || [])) {
+          const dg = p.discount_g;
+          if (dg?.new_amount && p.slug) discounts.set(p.slug, { price: Number(dg.new_amount), originalPrice: Number(p.precio_general) });
+        }
+      }
+      console.log(`  [ZonaDigital] Loaded ${discounts.size} discounted products from offers`);
+    }
+  } catch { /* best-effort */ }
+
   const all = new Map<string,RawProduct>();
   for (const term of terms) {
     let page = 1;
@@ -71,7 +87,12 @@ async function scrapeZonaDigital(): Promise<RawProduct[]> {
       try {
         const res = await fetch(`${API}/search_products/`, { method:"POST", headers:{"Content-Type":"application/json",Accept:"application/json","User-Agent":"Mozilla/5.0"}, body:JSON.stringify({search:term,page}) });
         if (!res.ok) break; const data = await res.json(); const products = data.products||[]; if(products.length===0) break;
-        for (const p of products) { const slug=p.slug||""; if(all.has(slug)) continue; const brand=p.marca?.name||null; const price=p.precio_general||0; if(price===0) continue; all.set(slug,{name:(brand?`${brand} `:"")+(p.title||""),price,originalPrice:null,url:`${SITE}/product/${slug}`,imageUrl:p.imagen||p.image||null,sku:p.uniqd||null,isAvailable:p.state===1}); }
+        for (const p of products) {
+          const slug=p.slug||""; if(all.has(slug)) continue;
+          const basePrice=Number(p.precio_general)||0; if(basePrice===0) continue;
+          const discount = discounts.get(slug);
+          all.set(slug,{name:p.title||"",price:discount?discount.price:basePrice,originalPrice:discount?discount.originalPrice:null,url:`${SITE}/product/${slug}`,imageUrl:p.imagen||p.image||null,sku:p.uniqd||null,isAvailable:true});
+        }
         if(page*8>=(data.total_products||0)) break; page++;
       } catch { break; }
     }
