@@ -201,14 +201,28 @@ export async function getProductBySlug(slug: string) {
   };
 }
 
-export async function getProductsByCategory(categorySlug: string) {
+export async function getProductsByCategory(
+  categorySlug: string,
+  page = 1,
+  pageSize = 40
+) {
   const category = await getPrisma().category.findUnique({
     where: { slug: categorySlug },
   });
-  if (!category) return { category: null, products: [] };
+  if (!category) return { category: null, products: [], totalPages: 0 };
+
+  const total = await getPrisma().product.count({
+    where: {
+      categoryId: category.id,
+      storeProducts: { some: {} },
+    },
+  });
 
   const products = await getPrisma().product.findMany({
-    where: { categoryId: category.id },
+    where: {
+      categoryId: category.id,
+      storeProducts: { some: {} },
+    },
     include: {
       category: true,
       storeProducts: {
@@ -217,11 +231,14 @@ export async function getProductsByCategory(categorySlug: string) {
       },
     },
     orderBy: { name: "asc" },
+    skip: (page - 1) * pageSize,
+    take: pageSize,
   });
 
   return {
     category: { name: category.name, slug: category.slug },
-    products: products.filter((p) => p.storeProducts.length > 0).map(mapProduct),
+    products: products.map(mapProduct),
+    totalPages: Math.ceil(total / pageSize),
   };
 }
 
@@ -288,4 +305,41 @@ export async function getStores() {
     where: { isActive: true },
     orderBy: { name: "asc" },
   });
+}
+
+export async function getProductsByStore(storeSlug: string) {
+  const store = await getPrisma().store.findUnique({
+    where: { slug: storeSlug },
+  });
+  if (!store) return { store: null, products: [] };
+
+  const storeProducts = await getPrisma().storeProduct.findMany({
+    where: { storeId: store.id, isAvailable: true },
+    include: {
+      product: {
+        include: {
+          category: true,
+          storeProducts: {
+            include: { store: true },
+            orderBy: { currentPrice: "asc" },
+          },
+        },
+      },
+    },
+    orderBy: { currentPrice: "asc" },
+  });
+
+  const seen = new Set<number>();
+  const products = storeProducts
+    .filter((sp) => {
+      if (seen.has(sp.productId)) return false;
+      seen.add(sp.productId);
+      return sp.product.storeProducts.length > 0;
+    })
+    .map((sp) => mapProduct(sp.product));
+
+  return {
+    store: { name: store.name, slug: store.slug, url: store.websiteUrl },
+    products,
+  };
 }

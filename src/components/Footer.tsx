@@ -59,9 +59,12 @@ export function Footer() {
             <ul className="space-y-2">
               {stores.map((store) => (
                 <li key={store.slug}>
-                  <span className="text-sm text-muted-foreground">
+                  <Link
+                    href={`/tienda/${store.slug}`}
+                    className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                  >
                     {store.name}
-                  </span>
+                  </Link>
                 </li>
               ))}
             </ul>
