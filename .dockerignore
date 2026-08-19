@@ -7,3 +7,5 @@ node_modules
 .claude
 .agents
 .windsurf
+Dockerfile.scraper
+Dockerfile.web
