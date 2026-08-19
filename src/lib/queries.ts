@@ -92,6 +92,7 @@ export async function getDeals(limit = 8) {
 
 export async function getPopularProducts(limit = 8) {
   const products = await getPrisma().product.findMany({
+    where: { storeProducts: { some: { isAvailable: true } } },
     orderBy: { viewCount: "desc" },
     take: limit,
     include: {
@@ -198,7 +199,10 @@ export async function getProductsByCategory(categorySlug: string) {
   if (!category) return { category: null, products: [] };
 
   const products = await getPrisma().product.findMany({
-    where: { categoryId: category.id },
+    where: {
+      categoryId: category.id,
+      storeProducts: { some: { isAvailable: true } },
+    },
     include: {
       category: true,
       storeProducts: {
@@ -245,6 +249,7 @@ export async function searchProducts(query: string) {
         { brand: { contains: query, mode: "insensitive" } },
         { model: { contains: query, mode: "insensitive" } },
       ],
+      storeProducts: { some: { isAvailable: true } },
     },
     include: {
       category: true,
