@@ -217,11 +217,11 @@ async function checkAlerts() {
     const bestPrice = alert.product.storeProducts[0];
     if (!bestPrice) continue;
     const current = Number(bestPrice.currentPrice);
-    const target = alert.targetPrice ? Number(alert.targetPrice) : null;
-    if (target && current > target) continue;
+    const lowestEver = Number(alert.product.lowestPriceEver) || Infinity;
+    if (current >= lowestEver) continue;
     const lastNotified = alert.lastNotifiedAt;
     if (lastNotified && Date.now() - lastNotified.getTime() < 24 * 60 * 60 * 1000) continue;
-    console.log(`  Alert: ${alert.product.name} dropped to $${current} at ${bestPrice.store.name} (target: $${target || "any drop"})`);
+    console.log(`  Alert: ${alert.product.name} dropped to $${current} at ${bestPrice.store.name}`);
     // TODO: Send email via Resend when configured
     await prisma.priceAlert.update({ where: { id: alert.id }, data: { lastNotifiedAt: new Date() } });
     triggered++;

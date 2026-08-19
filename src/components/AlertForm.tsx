@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Bell, Check, Loader2, LogIn } from "lucide-react";
+import { Bell, Check, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -26,7 +26,6 @@ export function AlertForm({
 }) {
   const { user, signIn } = useAuth();
   const [email, setEmail] = useState("");
-  const [targetPrice, setTargetPrice] = useState("");
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [message, setMessage] = useState("");
   const [open, setOpen] = useState(false);
@@ -44,7 +43,6 @@ export function AlertForm({
         body: JSON.stringify({
           email: effectiveEmail,
           productId,
-          targetPrice: targetPrice ? parseFloat(targetPrice) : null,
           userId: user?.uid || null,
         }),
       });
@@ -57,11 +55,7 @@ export function AlertForm({
       }
 
       setStatus("success");
-      setMessage(
-        targetPrice
-          ? `Te notificaremos a ${effectiveEmail} cuando baje de $${targetPrice}`
-          : `Te notificaremos a ${effectiveEmail} cuando baje el precio`
-      );
+      setMessage(`Te notificaremos a ${effectiveEmail} cuando baje el precio`);
     } catch {
       setStatus("error");
       setMessage("Error de conexión");
@@ -132,30 +126,10 @@ export function AlertForm({
                 />
               </div>
             )}
-            <div>
-              <Label htmlFor="alert-price">
-                Precio objetivo (opcional)
-              </Label>
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-                  $
-                </span>
-                <Input
-                  id="alert-price"
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  max={currentPrice}
-                  placeholder={`Ej: ${(currentPrice * 0.8).toFixed(2)}`}
-                  value={targetPrice}
-                  onChange={(e) => setTargetPrice(e.target.value)}
-                  className="pl-7"
-                />
-              </div>
-              <p className="text-xs text-muted-foreground mt-1">
-                Deja vacío para recibir alerta ante cualquier baja de precio.
-              </p>
-            </div>
+
+            <p className="text-sm text-muted-foreground">
+              Te enviaremos un correo cada vez que baje el precio de este producto.
+            </p>
 
             {status === "error" && (
               <p className="text-sm text-red-500">{message}</p>
