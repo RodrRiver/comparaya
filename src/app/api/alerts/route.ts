@@ -5,7 +5,7 @@ import { getPrisma } from "@/lib/db";
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { email, productId, targetPrice } = body;
+    const { email, productId, targetPrice, userId } = body;
 
     if (!email || !productId) {
       return NextResponse.json(
@@ -54,6 +54,7 @@ export async function POST(request: Request) {
         email,
         productId,
         targetPrice: targetPrice || null,
+        userId: userId || null,
         isActive: true,
       },
     });

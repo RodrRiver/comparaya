@@ -36,6 +36,7 @@ model Product {
   viewCount       Int            @default(0)
   storeProducts   StoreProduct[]
   priceAlerts     PriceAlert[]
+  wishlists       Wishlist[]
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
 
@@ -92,6 +93,7 @@ model PriceHistory {
 model PriceAlert {
   id             Int      @id @default(autoincrement())
   email          String
+  userId         String?
   productId      Int
   product        Product  @relation(fields: [productId], references: [id])
   targetPrice    Decimal? @db.Decimal(10, 2)
@@ -101,5 +103,18 @@ model PriceAlert {
 
   @@unique([email, productId])
   @@index([isActive])
+  @@index([userId])
   @@map("price_alerts")
+}
+
+model Wishlist {
+  id        Int      @id @default(autoincrement())
+  userId    String
+  productId Int
+  product   Product  @relation(fields: [productId], references: [id])
+  createdAt DateTime @default(now())
+
+  @@unique([userId, productId])
+  @@index([userId])
+  @@map("wishlists")
 }

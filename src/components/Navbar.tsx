@@ -2,11 +2,12 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { Search, Menu, X, TrendingDown, Heart } from "lucide-react";
+import { Search, Menu, X, TrendingDown, Heart, LogIn, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/components/AuthProvider";
 
 const categories = [
   { name: "Celulares", slug: "celulares" },
@@ -20,6 +21,7 @@ const categories = [
 export function Navbar() {
   const [query, setQuery] = useState("");
   const router = useRouter();
+  const { user, signIn, signOut, loading } = useAuth();
 
   function handleSearch(e: React.FormEvent) {
     e.preventDefault();
@@ -69,6 +71,32 @@ export function Navbar() {
           <Heart className="h-4 w-4" />
         </Link>
 
+        {!loading && (
+          <div className="hidden md:flex items-center">
+            {user ? (
+              <div className="flex items-center gap-2">
+                {user.photoURL && (
+                  <img
+                    src={user.photoURL}
+                    alt=""
+                    className="h-7 w-7 rounded-full"
+                    referrerPolicy="no-referrer"
+                  />
+                )}
+                <Button variant="ghost" size="sm" onClick={signOut} className="text-xs text-muted-foreground">
+                  <LogOut className="h-3.5 w-3.5 mr-1" />
+                  Salir
+                </Button>
+              </div>
+            ) : (
+              <Button variant="outline" size="sm" onClick={signIn} className="gap-1.5 text-xs">
+                <LogIn className="h-3.5 w-3.5" />
+                Iniciar sesión
+              </Button>
+            )}
+          </div>
+        )}
+
         <Sheet>
           <SheetTrigger
             render={<Button variant="ghost" size="icon" className="md:hidden" />}
@@ -102,6 +130,33 @@ export function Navbar() {
               <Link href="/tiendas" className="px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground">
                 Tiendas
               </Link>
+              <Link href="/wishlist" className="px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground flex items-center gap-2">
+                <Heart className="h-4 w-4" />
+                Wishlist
+              </Link>
+              {!loading && (
+                <div className="px-3 py-2">
+                  {user ? (
+                    <div className="flex items-center gap-3">
+                      {user.photoURL && (
+                        <img src={user.photoURL} alt="" className="h-8 w-8 rounded-full" referrerPolicy="no-referrer" />
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">{user.displayName}</p>
+                        <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+                      </div>
+                      <Button variant="ghost" size="sm" onClick={signOut}>
+                        <LogOut className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <Button variant="outline" size="sm" onClick={signIn} className="w-full gap-2">
+                      <LogIn className="h-4 w-4" />
+                      Iniciar sesión
+                    </Button>
+                  )}
+                </div>
+              )}
             </div>
           </SheetContent>
         </Sheet>

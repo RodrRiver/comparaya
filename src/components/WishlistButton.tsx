@@ -3,38 +3,47 @@
 import { useState, useEffect } from "react";
 import { Heart } from "lucide-react";
 import { Button } from "@/components/ui/button";
-
-const STORAGE_KEY = "comparaya-wishlist";
-
-function getWishlist(): number[] {
-  if (typeof window === "undefined") return [];
-  try {
-    return JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
-  } catch {
-    return [];
-  }
-}
-
-function setWishlist(ids: number[]) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(ids));
-}
+import { useAuth } from "@/components/AuthProvider";
 
 export function WishlistButton({ productId }: { productId: number }) {
+  const { user, signIn } = useAuth();
   const [saved, setSaved] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    setSaved(getWishlist().includes(productId));
-  }, [productId]);
+    if (!user) {
+      setSaved(false);
+      return;
+    }
+    fetch(`/api/wishlist?userId=${user.uid}`)
+      .then((r) => r.json())
+      .then((data) => {
+        setSaved(data.productIds?.includes(productId) || false);
+      })
+      .catch(() => {});
+  }, [user, productId]);
 
-  function toggle() {
-    const list = getWishlist();
-    if (list.includes(productId)) {
-      setWishlist(list.filter((id) => id !== productId));
+  async function toggle() {
+    if (!user) {
+      await signIn();
+      return;
+    }
+
+    setLoading(true);
+    if (saved) {
+      await fetch(`/api/wishlist?userId=${user.uid}&productId=${productId}`, {
+        method: "DELETE",
+      });
       setSaved(false);
     } else {
-      setWishlist([...list, productId]);
+      await fetch("/api/wishlist", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: user.uid, productId }),
+      });
       setSaved(true);
     }
+    setLoading(false);
   }
 
   return (
@@ -42,6 +51,7 @@ export function WishlistButton({ productId }: { productId: number }) {
       variant="outline"
       className={`gap-2 ${saved ? "text-red-500 border-red-200 bg-red-50 hover:bg-red-100" : ""}`}
       onClick={toggle}
+      disabled={loading}
     >
       <Heart className={`h-4 w-4 ${saved ? "fill-current" : ""}`} />
       {saved ? "Guardado" : "Guardar"}

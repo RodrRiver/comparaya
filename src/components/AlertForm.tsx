@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Bell, Check, Loader2 } from "lucide-react";
+import { Bell, Check, Loader2, LogIn } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,6 +13,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
+import { useAuth } from "@/components/AuthProvider";
 
 export function AlertForm({
   productId,
@@ -23,10 +24,14 @@ export function AlertForm({
   productName: string;
   currentPrice: number;
 }) {
+  const { user, signIn } = useAuth();
   const [email, setEmail] = useState("");
   const [targetPrice, setTargetPrice] = useState("");
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [message, setMessage] = useState("");
+  const [open, setOpen] = useState(false);
+
+  const effectiveEmail = user?.email || email;
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -37,9 +42,10 @@ export function AlertForm({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          email,
+          email: effectiveEmail,
           productId,
           targetPrice: targetPrice ? parseFloat(targetPrice) : null,
+          userId: user?.uid || null,
         }),
       });
 
@@ -53,8 +59,8 @@ export function AlertForm({
       setStatus("success");
       setMessage(
         targetPrice
-          ? `Te notificaremos a ${email} cuando baje de $${targetPrice}`
-          : `Te notificaremos a ${email} cuando baje el precio`
+          ? `Te notificaremos a ${effectiveEmail} cuando baje de $${targetPrice}`
+          : `Te notificaremos a ${effectiveEmail} cuando baje el precio`
       );
     } catch {
       setStatus("error");
@@ -62,14 +68,27 @@ export function AlertForm({
     }
   }
 
+  async function handleClick() {
+    if (!user) {
+      await signIn();
+      return;
+    }
+    setOpen(true);
+  }
+
   return (
-    <Dialog>
-      <DialogTrigger
-        render={<Button className="gap-2" />}
-      >
-        <Bell className="h-4 w-4" />
-        Crear alerta de precio
-      </DialogTrigger>
+    <Dialog open={open} onOpenChange={setOpen}>
+      {user ? (
+        <DialogTrigger render={<Button className="gap-2" />}>
+          <Bell className="h-4 w-4" />
+          Crear alerta de precio
+        </DialogTrigger>
+      ) : (
+        <Button className="gap-2" onClick={handleClick}>
+          <Bell className="h-4 w-4" />
+          Crear alerta de precio
+        </Button>
+      )}
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Alerta de precio</DialogTitle>
@@ -90,17 +109,29 @@ export function AlertForm({
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <Label htmlFor="alert-email">Correo electrónico</Label>
-              <Input
-                id="alert-email"
-                type="email"
-                placeholder="tu@email.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-              />
-            </div>
+            {user ? (
+              <div className="flex items-center gap-2 p-3 rounded-lg bg-muted/50">
+                {user.photoURL && (
+                  <img src={user.photoURL} alt="" className="h-8 w-8 rounded-full" referrerPolicy="no-referrer" />
+                )}
+                <div>
+                  <p className="text-sm font-medium">{user.displayName}</p>
+                  <p className="text-xs text-muted-foreground">{user.email}</p>
+                </div>
+              </div>
+            ) : (
+              <div>
+                <Label htmlFor="alert-email">Correo electrónico</Label>
+                <Input
+                  id="alert-email"
+                  type="email"
+                  placeholder="tu@email.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                />
+              </div>
+            )}
             <div>
               <Label htmlFor="alert-price">
                 Precio objetivo (opcional)
