@@ -71,7 +71,7 @@ async function scrapeZonaDigital(): Promise<RawProduct[]> {
       try {
         const res = await fetch(`${API}/search_products/`, { method:"POST", headers:{"Content-Type":"application/json",Accept:"application/json","User-Agent":"Mozilla/5.0"}, body:JSON.stringify({search:term,page}) });
         if (!res.ok) break; const data = await res.json(); const products = data.products||[]; if(products.length===0) break;
-        for (const p of products) { const slug=p.slug||""; if(all.has(slug)) continue; const brand=p.marca?.name||null; const price=p.precio_general||0; if(price===0) continue; all.set(slug,{name:(brand?`${brand} `:"")+(p.title||""),price,originalPrice:null,url:`${SITE}/product/${slug}`,imageUrl:p.image||null,sku:p.uniqd||null,isAvailable:p.state===1}); }
+        for (const p of products) { const slug=p.slug||""; if(all.has(slug)) continue; const brand=p.marca?.name||null; const price=p.precio_general||0; if(price===0) continue; all.set(slug,{name:(brand?`${brand} `:"")+(p.title||""),price,originalPrice:null,url:`${SITE}/product/${slug}`,imageUrl:p.imagen||p.image||null,sku:p.uniqd||null,isAvailable:p.state===1}); }
         if(page*8>=(data.total_products||0)) break; page++;
       } catch { break; }
     }

@@ -1,5 +1,11 @@
 // @ts-nocheck
 import { getPrisma } from "./db";
+import { upscaleImageUrl } from "./utils";
+
+const PLACEHOLDER = "https://placehold.co/400x400/e2e8f0/475569?text=Producto";
+function productImage(url: string | null): string {
+  return upscaleImageUrl(url || PLACEHOLDER);
+}
 
 export async function getCategories() {
   const categories = await getPrisma().category.findMany({
@@ -69,7 +75,7 @@ export async function getDeals(limit = 8) {
       brand: p.brand,
       model: p.model,
       slug: p.slug,
-      imageUrl: p.imageUrl || "https://placehold.co/400x400/e2e8f0/475569?text=Producto",
+      imageUrl: productImage(p.imageUrl),
       category: p.category.slug,
       lowestPrice: lowest,
       highestPrice: highest,
@@ -109,7 +115,7 @@ export async function getPopularProducts(limit = 8) {
       brand: p.brand,
       model: p.model,
       slug: p.slug,
-      imageUrl: p.imageUrl || "https://placehold.co/400x400/e2e8f0/475569?text=Producto",
+      imageUrl: productImage(p.imageUrl),
       category: p.category.slug,
       lowestPrice: lowest,
       highestPrice: highest,
@@ -172,8 +178,8 @@ export async function getProductBySlug(slug: string) {
     brand: product.brand,
     model: product.model,
     slug: product.slug,
-    imageUrl: product.imageUrl || "https://placehold.co/400x400/e2e8f0/475569?text=Producto",
-    images: (product as any).images || [],
+    imageUrl: productImage(product.imageUrl),
+    images: ((product as any).images || []).map(upscaleImageUrl),
     category: product.category.slug,
     lowestPrice,
     highestPrice,
@@ -217,7 +223,7 @@ export async function getProductsByCategory(categorySlug: string) {
         brand: p.brand,
         model: p.model,
         slug: p.slug,
-        imageUrl: p.imageUrl || "https://placehold.co/400x400/e2e8f0/475569?text=Producto",
+        imageUrl: productImage(p.imageUrl),
         category: p.category.slug,
         lowestPrice: lowest,
         highestPrice: highest,
@@ -262,7 +268,7 @@ export async function searchProducts(query: string) {
       brand: p.brand,
       model: p.model,
       slug: p.slug,
-      imageUrl: p.imageUrl || "https://placehold.co/400x400/e2e8f0/475569?text=Producto",
+      imageUrl: productImage(p.imageUrl),
       category: p.category.slug,
       lowestPrice: lowest,
       highestPrice: highest,

@@ -354,7 +354,7 @@ async function scrapeZonaDigital(): Promise<RawProduct[]> {
             price,
             originalPrice: null,
             url: `${SITE}/product/${slug}`,
-            imageUrl: p.image || null,
+            imageUrl: p.imagen || p.image || null,
             sku: p.uniqd || null,
             isAvailable: p.state === 1,
           });
