@@ -65,6 +65,14 @@ const stores = [
       "Cadena centroamericana de electrodomésticos y electrónica con financiamiento.",
     categories: ["TVs", "Celulares", "Audio", "Laptops"],
   },
+  {
+    name: "Zona Digital",
+    slug: "zona-digital",
+    url: "https://zonadigitalsv.com",
+    description:
+      "Tienda en línea de tecnología con amplia variedad de celulares, laptops y accesorios.",
+    categories: ["Celulares", "Laptops", "Audio", "Accesorios"],
+  },
 ];
 
 export default function StoresPage() {

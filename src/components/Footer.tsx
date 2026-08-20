@@ -18,6 +18,7 @@ const stores = [
   { name: "Aeon Computers", slug: "aeon" },
   { name: "Intelmax", slug: "intelmax" },
   { name: "La Curacao", slug: "la-curacao" },
+  { name: "Zona Digital", slug: "zona-digital" },
 ];
 
 export function Footer() {
