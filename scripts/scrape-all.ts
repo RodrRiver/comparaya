@@ -41,7 +41,7 @@ async function scrapeSiman(): Promise<RawProduct[]> {
       for (const p of data) {
         const item = p.items?.[0];
         const offer = item?.sellers?.[0]?.commertialOffer;
-        if (!offer || offer.Price === 0) continue;
+        if (!offer || offer.Price === 0 || offer.Price >= 50000) continue;
         const allImages = (item?.images || [])
           .map((img: any) => img.imageUrl)
           .filter((url: string) => !!url);

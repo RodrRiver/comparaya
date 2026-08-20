@@ -14,6 +14,13 @@ function mapProduct(p: any) {
   const lowest = prices.length > 0 ? Math.min(...prices) : 0;
   const highest = prices.length > 0 ? Math.max(...prices) : 0;
 
+  const bestDeal = priceSources.find(
+    (sp: any) => sp.originalPrice && Number(sp.originalPrice) > Number(sp.currentPrice)
+  );
+  const discount = bestDeal
+    ? Math.round((1 - Number(bestDeal.currentPrice) / Number(bestDeal.originalPrice)) * 100)
+    : null;
+
   return {
     id: p.id,
     name: p.name,
@@ -28,7 +35,7 @@ function mapProduct(p: any) {
     storeCount: p.storeProducts.length,
     availableCount: available.length,
     isAvailable: available.length > 0,
-    discount: null as number | null,
+    discount: discount && discount > 0 ? discount : null,
   };
 }
 

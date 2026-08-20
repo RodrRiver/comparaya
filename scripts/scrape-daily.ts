@@ -30,7 +30,7 @@ async function scrapeSiman(): Promise<RawProduct[]> {
       if (!Array.isArray(data) || data.length === 0) break;
       for (const p of data) {
         const item = p.items?.[0]; const offer = item?.sellers?.[0]?.commertialOffer;
-        if (!offer || offer.Price === 0) continue;
+        if (!offer || offer.Price === 0 || offer.Price >= 50000) continue;
         const allImages = (item?.images||[]).map((img:any)=>img.imageUrl).filter((u:string)=>!!u);
         all.push({ name: p.productName||"", price: offer.Price, originalPrice: offer.ListPrice>offer.Price?offer.ListPrice:null, url: `${BASE}/${p.linkText}/p`, imageUrl: allImages[0]||null, images: allImages, sku: item?.itemId||null, isAvailable: offer.IsAvailable??true });
       }
